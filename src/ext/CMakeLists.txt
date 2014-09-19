@@ -1,5 +1,10 @@
 # Copyright (c) Monetas AG, 2014
 
+add_subdirectory(trade)
+add_subdirectory(cron)
+add_subdirectory(script)
+add_subdirectory(recurring)
+
 set(cxx-sources
   OTSocket.cpp
   Socket_ZMQ4.cpp

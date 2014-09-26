@@ -133,7 +133,7 @@
 #include "stdafx.hpp"
 
 #include "recurring/OTPaymentPlan.hpp"
-#include "script/OTSmartContract.hpp"
+//#include "script/OTSmartContract.hpp"
 #include "OTTransaction.hpp"
 #include "OTCheque.hpp"
 #include "OTFolders.hpp"
@@ -791,99 +791,99 @@ bool OTTransaction::HarvestOpeningNumber(
     // issued" on the client side, and
     // the server-side sees things that way already as well.)
     //
+    /*
+case OTTransaction::smartContract: // Uses X transaction #s, with an opener
+                                   // for each party and a closer for each
+                                   // asset account.
+    // If the message is rejected by the server, then ALL openers can be
+    // harvested. But if the
+    // message was successful (REGARDLESS of whether the transaction was
+    // successful) then all of
+    // the openers for all of the parties have been burned. The closers,
+    // meanwhile, can be recovered
+    // if the message is a failure, as well as in cases where message
+    // succeeds but transaction failed.
+    // But if transaction succeeded, then the closers CANNOT be recovered.
+    // (Only removed, once you sign
+    // off on the receipt.)
+    {
 
-    case OTTransaction::smartContract: // Uses X transaction #s, with an opener
-                                       // for each party and a closer for each
-                                       // asset account.
-        // If the message is rejected by the server, then ALL openers can be
-        // harvested. But if the
-        // message was successful (REGARDLESS of whether the transaction was
-        // successful) then all of
-        // the openers for all of the parties have been burned. The closers,
-        // meanwhile, can be recovered
-        // if the message is a failure, as well as in cases where message
-        // succeeds but transaction failed.
-        // But if transaction succeeded, then the closers CANNOT be recovered.
-        // (Only removed, once you sign
-        // off on the receipt.)
-        {
+        OTItem* pItem = GetItem(OTItem::smartContract);
 
-            OTItem* pItem = GetItem(OTItem::smartContract);
-
-            if (nullptr == pItem) {
-                otErr << "OTTransaction::HarvestOpeningNumber: Error: Unable "
-                         "to find "
-                         "smartContract item in smartContract transaction.\n";
-            }
-            else // Load up the smart contract...
-            {
-                OTString strSmartContract;
-                OTSmartContract theSmartContract(GetPurportedServerID());
-                pItem->GetAttachment(strSmartContract);
-
-                // If we failed to load the smart contract...
-                if (!strSmartContract.Exists() ||
-                    (false ==
-                     theSmartContract.LoadContractFromString(
-                         strSmartContract))) {
-                    otErr << "OTTransaction::HarvestOpeningNumber: Error: "
-                             "Unable to load "
-                             "smartContract object from smartContract "
-                             "transaction item.\n";
-                }
-                else // theSmartContract is ready to go....
-                {
-
-                    // The message reply itself was a failure. This means the
-                    // transaction itself never got a chance
-                    // to run... which means ALL the opening numbers on that
-                    // transaction are STILL GOOD.
-                    //
-                    if (bReplyWasFailure && !bHarvestingForRetry) {
-                        // If I WAS harvesting for a re-try, I'd want to leave
-                        // the opening number
-                        // on this smart contract
-                        theSmartContract.HarvestOpeningNumber(theNym);
-                        bSuccess = true;
-                    }
-                    // Else if the server reply message was unambiguously a
-                    // SUCCESS, that means the opening number is DEFINITELY NOT
-                    // HARVESTABLE.
-                    // Why? Because that means the transaction definitely
-                    // ran--and the opener is marked as "used" on SUCCESS, or
-                    // "burned" on
-                    // FAILURE--either way, that's bad for harvesting (no
-                    // point.)
-                    //
-                    else if (bReplyWasSuccess) {
-                        if (bTransactionWasSuccess) {
-                            // This means the "smartContract" opening trans# is
-                            // MARKED AS "USED", and will someday be marked as
-                            // CLOSED.
-                            // EITHER WAY, you certainly can't claw that number
-                            // back now! (It is still outstanding, though. It's
-                            // not gone, yet...)
-                            //
-                            //                          theSmartContract.HarvestOpeningNumber(theNym);
-                            //                          bSuccess = true;
-                        }
-                        else if (bTransactionWasFailure) {
-                            // Whereas if the transaction was a failure, that
-                            // means the opening trans number was DEFINITELY
-                            // burned.
-                            // (No point clawing it back now--it's gone
-                            // already.)
-                            //
-                            //                          theSmartContract.HarvestOpeningNumber(theNym);
-                            //                          bSuccess = true;
-                        }
-                    } // else if (bReplyWasSuccess)
-
-                } // else (smart contract loaded successfully)
-            }     // pItem was found.
+        if (nullptr == pItem) {
+            otErr << "OTTransaction::HarvestOpeningNumber: Error: Unable "
+                     "to find "
+                     "smartContract item in smartContract transaction.\n";
         }
-        break;
+        else // Load up the smart contract...
+        {
+            OTString strSmartContract;
+            OTSmartContract theSmartContract(GetPurportedServerID());
+            pItem->GetAttachment(strSmartContract);
 
+            // If we failed to load the smart contract...
+            if (!strSmartContract.Exists() ||
+                (false ==
+                 theSmartContract.LoadContractFromString(
+                     strSmartContract))) {
+                otErr << "OTTransaction::HarvestOpeningNumber: Error: "
+                         "Unable to load "
+                         "smartContract object from smartContract "
+                         "transaction item.\n";
+            }
+            else // theSmartContract is ready to go....
+            {
+
+                // The message reply itself was a failure. This means the
+                // transaction itself never got a chance
+                // to run... which means ALL the opening numbers on that
+                // transaction are STILL GOOD.
+                //
+                if (bReplyWasFailure && !bHarvestingForRetry) {
+                    // If I WAS harvesting for a re-try, I'd want to leave
+                    // the opening number
+                    // on this smart contract
+                    theSmartContract.HarvestOpeningNumber(theNym);
+                    bSuccess = true;
+                }
+                // Else if the server reply message was unambiguously a
+                // SUCCESS, that means the opening number is DEFINITELY NOT
+                // HARVESTABLE.
+                // Why? Because that means the transaction definitely
+                // ran--and the opener is marked as "used" on SUCCESS, or
+                // "burned" on
+                // FAILURE--either way, that's bad for harvesting (no
+                // point.)
+                //
+                else if (bReplyWasSuccess) {
+                    if (bTransactionWasSuccess) {
+                        // This means the "smartContract" opening trans# is
+                        // MARKED AS "USED", and will someday be marked as
+                        // CLOSED.
+                        // EITHER WAY, you certainly can't claw that number
+                        // back now! (It is still outstanding, though. It's
+                        // not gone, yet...)
+                        //
+                        // theSmartContract.HarvestOpeningNumber(theNym);
+                        //                          bSuccess = true;
+                    }
+                    else if (bTransactionWasFailure) {
+                        // Whereas if the transaction was a failure, that
+                        // means the opening trans number was DEFINITELY
+                        // burned.
+                        // (No point clawing it back now--it's gone
+                        // already.)
+                        //
+                        // theSmartContract.HarvestOpeningNumber(theNym);
+                        //                          bSuccess = true;
+                    }
+                } // else if (bReplyWasSuccess)
+
+            } // else (smart contract loaded successfully)
+        }     // pItem was found.
+    }
+    break;
+    */
     default:
         break;
     }
@@ -1127,112 +1127,112 @@ bool OTTransaction::HarvestClosingNumbers(
             }     // pItem was found.
         }
         break;
+    /*
+case OTTransaction::smartContract: // Uses X transaction #s, with an opener
+                                   // for each party and a closer for each
+                                   // asset account.
+    // If the message is rejected by the server, then ALL openers can be
+    // harvested. But if the
+    // message was successful (REGARDLESS of whether the transaction was
+    // successful) then all of
+    // the openers for all of the parties have been burned. The closers,
+    // meanwhile, can be recovered
+    // if the message is a failure, as well as in cases where message
+    // succeeds but transaction failed.
+    // But if transaction succeeded, then the closers CANNOT be recovered.
+    // (Only removed, once you sign
+    // off on the receipt.)
+    {
 
-    case OTTransaction::smartContract: // Uses X transaction #s, with an opener
-                                       // for each party and a closer for each
-                                       // asset account.
-        // If the message is rejected by the server, then ALL openers can be
-        // harvested. But if the
-        // message was successful (REGARDLESS of whether the transaction was
-        // successful) then all of
-        // the openers for all of the parties have been burned. The closers,
-        // meanwhile, can be recovered
-        // if the message is a failure, as well as in cases where message
-        // succeeds but transaction failed.
-        // But if transaction succeeded, then the closers CANNOT be recovered.
-        // (Only removed, once you sign
-        // off on the receipt.)
+        OTItem* pItem = GetItem(OTItem::smartContract);
+
+        if (nullptr == pItem) {
+            otErr << "OTTransaction::HarvestClosingNumbers: Error: Unable "
+                     "to find "
+                     "smartContract item in smartContract transaction.\n";
+        }
+        else // Load up the smart contract...
         {
+            OTString strSmartContract;
+            OTSmartContract theSmartContract(GetPurportedServerID());
+            pItem->GetAttachment(strSmartContract);
 
-            OTItem* pItem = GetItem(OTItem::smartContract);
-
-            if (nullptr == pItem) {
-                otErr << "OTTransaction::HarvestClosingNumbers: Error: Unable "
-                         "to find "
-                         "smartContract item in smartContract transaction.\n";
+            // If we failed to load the smart contract...
+            if (!strSmartContract.Exists() ||
+                (false ==
+                 theSmartContract.LoadContractFromString(
+                     strSmartContract))) {
+                otErr << "OTTransaction::HarvestClosingNumbers: Error: "
+                         "Unable to load "
+                         "smartContract object from smartContract "
+                         "transaction item.\n";
             }
-            else // Load up the smart contract...
+            else // theSmartContract is ready to go....
             {
-                OTString strSmartContract;
-                OTSmartContract theSmartContract(GetPurportedServerID());
-                pItem->GetAttachment(strSmartContract);
 
-                // If we failed to load the smart contract...
-                if (!strSmartContract.Exists() ||
-                    (false ==
-                     theSmartContract.LoadContractFromString(
-                         strSmartContract))) {
-                    otErr << "OTTransaction::HarvestClosingNumbers: Error: "
-                             "Unable to load "
-                             "smartContract object from smartContract "
-                             "transaction item.\n";
-                }
-                else // theSmartContract is ready to go....
+                // The message reply itself was a failure. This means the
+                // transaction itself never got a chance
+                // to run... which means ALL the closing numbers on that
+                // transaction are STILL GOOD.
+                //
+                if (bReplyWasFailure &&
+                    !bHarvestingForRetry) // on re-try, we need the closing
+                                          // #s to stay put, so the re-try
+                                          // has a chance to work.
                 {
-
-                    // The message reply itself was a failure. This means the
-                    // transaction itself never got a chance
-                    // to run... which means ALL the closing numbers on that
-                    // transaction are STILL GOOD.
-                    //
-                    if (bReplyWasFailure &&
-                        !bHarvestingForRetry) // on re-try, we need the closing
-                                              // #s to stay put, so the re-try
-                                              // has a chance to work.
+                    theSmartContract.HarvestClosingNumbers(theNym);
+                    bSuccess = true;
+                }
+                // Else if the server reply message was unambiguously a
+                // SUCCESS, that means the opening number is DEFINITELY NOT
+                // HARVESTABLE.
+                // Why? Because that means the transaction definitely
+                // ran--and the opener is marked as "used" on SUCCESS, or
+                // "burned" on
+                // FAILURE--either way, that's bad for harvesting (no
+                // point.)
+                //
+                // ===> HOW ABOUT THE CLOSING NUMBERS?
+                // In cases where the message succeeds but the transaction
+                // failed, the closing numbers are recoverable. (TODO send
+                // notice to the parties when this happens...)
+                // But if transaction succeeded, then the closers CANNOT be
+                // recovered. They are now "used" on the server, so you
+                // might as well keep them in that format on the client
+                // side, since that's how the client has them already.
+                else if (bReplyWasSuccess) {
+                    if (bTransactionWasSuccess) {
+                        // This means the "smartContract" opening trans# is
+                        // MARKED AS "USED", and will someday be marked as
+                        // CLOSED.
+                        // EITHER WAY, you certainly can't claw that number
+                        // back now! (It is still outstanding, though. It's
+                        // not gone, yet...)
+                        //
+                        // theSmartContract.HarvestClosingNumbers(theNym);
+                        //                          bSuccess = true;
+                    }
+                    else if (bTransactionWasFailure &&
+                               !bHarvestingForRetry) // on re-try, we need
+                                                     // the closing #s to
+                                                     // stay put, so the
+                                                     // re-try has a chance
+                                                     // to work.
                     {
+                        // If the transaction was a failure, the opening
+                        // trans number was burned,
+                        // but the CLOSING numbers are still harvestable...
+                        //
                         theSmartContract.HarvestClosingNumbers(theNym);
                         bSuccess = true;
                     }
-                    // Else if the server reply message was unambiguously a
-                    // SUCCESS, that means the opening number is DEFINITELY NOT
-                    // HARVESTABLE.
-                    // Why? Because that means the transaction definitely
-                    // ran--and the opener is marked as "used" on SUCCESS, or
-                    // "burned" on
-                    // FAILURE--either way, that's bad for harvesting (no
-                    // point.)
-                    //
-                    // ===> HOW ABOUT THE CLOSING NUMBERS?
-                    // In cases where the message succeeds but the transaction
-                    // failed, the closing numbers are recoverable. (TODO send
-                    // notice to the parties when this happens...)
-                    // But if transaction succeeded, then the closers CANNOT be
-                    // recovered. They are now "used" on the server, so you
-                    // might as well keep them in that format on the client
-                    // side, since that's how the client has them already.
-                    else if (bReplyWasSuccess) {
-                        if (bTransactionWasSuccess) {
-                            // This means the "smartContract" opening trans# is
-                            // MARKED AS "USED", and will someday be marked as
-                            // CLOSED.
-                            // EITHER WAY, you certainly can't claw that number
-                            // back now! (It is still outstanding, though. It's
-                            // not gone, yet...)
-                            //
-                            //                          theSmartContract.HarvestClosingNumbers(theNym);
-                            //                          bSuccess = true;
-                        }
-                        else if (bTransactionWasFailure &&
-                                   !bHarvestingForRetry) // on re-try, we need
-                                                         // the closing #s to
-                                                         // stay put, so the
-                                                         // re-try has a chance
-                                                         // to work.
-                        {
-                            // If the transaction was a failure, the opening
-                            // trans number was burned,
-                            // but the CLOSING numbers are still harvestable...
-                            //
-                            theSmartContract.HarvestClosingNumbers(theNym);
-                            bSuccess = true;
-                        }
-                    } // else if (bReplyWasSuccess)
+                } // else if (bReplyWasSuccess)
 
-                } // else (smart contract loaded successfully)
-            }     // pItem was found.
-        }
-        break;
-
+            } // else (smart contract loaded successfully)
+        }     // pItem was found.
+    }
+    break;
+    */
     default:
         break;
     }
@@ -3896,8 +3896,9 @@ bool OTTransaction::GetSuccess()
                                       // request to place a market offer.
         case OTItem::atPaymentPlan:   // notarizeTransaction. server's reply to
                                       // request to activate a payment plan.
-        case OTItem::atSmartContract: // notarizeTransaction. server's reply to
-                                      // request to activate a smart contract.
+        // case OTItem::atSmartContract: // notarizeTransaction. server's reply
+        // to
+        // request to activate a smart contract.
 
         case OTItem::atCancelCronItem: // notarizeTransaction. server's reply to
                                        // request to cancel a [ market offer |
@@ -4035,10 +4036,10 @@ OTTransaction::transactionType OTTransaction::GetTypeFromString(
         theType = OTTransaction::paymentPlan;
     else if (strType.Compare("atPaymentPlan"))
         theType = OTTransaction::atPaymentPlan;
-    else if (strType.Compare("smartContract"))
-        theType = OTTransaction::smartContract;
-    else if (strType.Compare("atSmartContract"))
-        theType = OTTransaction::atSmartContract;
+    // else if (strType.Compare("smartContract"))
+    //    theType = OTTransaction::smartContract;
+    // else if (strType.Compare("atSmartContract"))
+    //    theType = OTTransaction::atSmartContract;
     else if (strType.Compare("cancelCronItem"))
         theType = OTTransaction::cancelCronItem;
     else if (strType.Compare("atCancelCronItem"))
@@ -5886,8 +5887,8 @@ void OTTransaction::CalculateNumberOfOrigin()
     case paymentPlan:   // this transaction is a payment plan
     case atPaymentPlan: // reply from the server regarding a payment plan
 
-    case smartContract:   // this transaction is a smart contract
-    case atSmartContract: // reply from the server regarding a smart contract
+    // case smartContract:   // this transaction is a smart contract
+    // case atSmartContract: // reply from the server regarding a smart contract
 
     case cancelCronItem:   // this transaction is intended to cancel a market
                            // offer or payment plan.
@@ -6040,49 +6041,50 @@ bool OTTransaction::GetSenderUserIDForDisplay(OTIdentifier& theReturnID)
     if (strReference.GetLength() < 2) return false;
 
     switch (GetType()) {
-    case OTTransaction::paymentReceipt: // for paymentPlans AND smartcontracts.
-                                        // (If the smart contract does a
-        // payment, it leaves a paymentReceipt...)
+    /*
+case OTTransaction::paymentReceipt: // for paymentPlans AND smartcontracts.
+                                    // (If the smart contract does a
+    // payment, it leaves a paymentReceipt...)
+    {
+        OTString strUpdatedCronItem;
+        OTItem* pItem = GetItem(OTItem::paymentReceipt);
+
+        if (nullptr != pItem)
+            pItem->GetAttachment(strUpdatedCronItem);
+        else
+            otErr << "OTTransaction::" << __FUNCTION__
+                  << ": Failed trying to get paymentReceipt item from "
+                     "paymentReceipt transaction.\n";
+
+        std::unique_ptr<OTCronItem> pCronItem(
+            OTCronItem::NewCronItem(strUpdatedCronItem));
+
+        OTSmartContract* pSmart =
+            dynamic_cast<OTSmartContract*>(pCronItem.get());
+
+        if (nullptr != pSmart) // if it's a smart contract...
         {
-            OTString strUpdatedCronItem;
-            OTItem* pItem = GetItem(OTItem::paymentReceipt);
+            if (!pSmart->GetLastSenderUserID().Exists()) return false;
 
-            if (nullptr != pItem)
-                pItem->GetAttachment(strUpdatedCronItem);
-            else
-                otErr << "OTTransaction::" << __FUNCTION__
-                      << ": Failed trying to get paymentReceipt item from "
-                         "paymentReceipt transaction.\n";
-
-            std::unique_ptr<OTCronItem> pCronItem(
-                OTCronItem::NewCronItem(strUpdatedCronItem));
-
-            OTSmartContract* pSmart =
-                dynamic_cast<OTSmartContract*>(pCronItem.get());
-
-            if (nullptr != pSmart) // if it's a smart contract...
-            {
-                if (!pSmart->GetLastSenderUserID().Exists()) return false;
-
-                theReturnID.SetString(pSmart->GetLastSenderUserID());
-                return true;
-            }
-            else if (nullptr != pCronItem) // else if it is any other kind of
-                                             // cron item...
-            {
-                theReturnID = pCronItem->GetSenderUserID();
-                return true;
-            }
-            else {
-                otErr << "OTTransaction::" << __FUNCTION__
-                      << ": Unable to load Cron Item. Should never happen. "
-                         "Receipt: " << GetTransactionNum()
-                      << "  Origin: " << GetNumberOfOrigin() << "\n";
-                return false;
-            }
-            break;
+            theReturnID.SetString(pSmart->GetLastSenderUserID());
+            return true;
         }
-
+        else if (nullptr != pCronItem) // else if it is any other kind of
+                                         // cron item...
+        {
+            theReturnID = pCronItem->GetSenderUserID();
+            return true;
+        }
+        else {
+            otErr << "OTTransaction::" << __FUNCTION__
+                  << ": Unable to load Cron Item. Should never happen. "
+                     "Receipt: " << GetTransactionNum()
+                  << "  Origin: " << GetNumberOfOrigin() << "\n";
+            return false;
+        }
+        break;
+    }
+    */
     case OTTransaction::instrumentNotice: {
         /*
          Therefore, if I am looping through my Nymbox, iterating through
@@ -6229,51 +6231,52 @@ bool OTTransaction::GetRecipientUserIDForDisplay(OTIdentifier& theReturnID)
     GetReferenceString(strReference);
 
     switch (GetType()) {
-    case OTTransaction::paymentReceipt: // Used for paymentPlans AND for smart
-                                        // contracts...
+    /*
+case OTTransaction::paymentReceipt: // Used for paymentPlans AND for smart
+                                    // contracts...
+    {
+        OTString strUpdatedCronItem;
+        OTItem* pItem = GetItem(OTItem::paymentReceipt);
+
+        if (nullptr != pItem)
+            pItem->GetAttachment(strUpdatedCronItem);
+        else
+            otErr << "OTTransaction::" << __FUNCTION__
+                  << ": Failed trying to get paymentReceipt item from "
+                     "paymentReceipt transaction.\n";
+
+        std::unique_ptr<OTCronItem> pCronItem(
+            OTCronItem::NewCronItem(strUpdatedCronItem));
+
+        OTSmartContract* pSmart =
+            dynamic_cast<OTSmartContract*>(pCronItem.get());
+        OTPaymentPlan* pPlan =
+            dynamic_cast<OTPaymentPlan*>(pCronItem.get());
+
+        if (nullptr != pSmart) // if it's a smart contract...
         {
-            OTString strUpdatedCronItem;
-            OTItem* pItem = GetItem(OTItem::paymentReceipt);
+            if (!pSmart->GetLastRecipientUserID().Exists()) return false;
 
-            if (nullptr != pItem)
-                pItem->GetAttachment(strUpdatedCronItem);
-            else
-                otErr << "OTTransaction::" << __FUNCTION__
-                      << ": Failed trying to get paymentReceipt item from "
-                         "paymentReceipt transaction.\n";
-
-            std::unique_ptr<OTCronItem> pCronItem(
-                OTCronItem::NewCronItem(strUpdatedCronItem));
-
-            OTSmartContract* pSmart =
-                dynamic_cast<OTSmartContract*>(pCronItem.get());
-            OTPaymentPlan* pPlan =
-                dynamic_cast<OTPaymentPlan*>(pCronItem.get());
-
-            if (nullptr != pSmart) // if it's a smart contract...
-            {
-                if (!pSmart->GetLastRecipientUserID().Exists()) return false;
-
-                theReturnID.SetString(pSmart->GetLastRecipientUserID());
-                return true;
-            }
-            else if (nullptr !=
-                       pPlan) // else if it is any other kind of cron item...
-            {
-                theReturnID = pPlan->GetRecipientUserID();
-                return true;
-            }
-            else {
-                otErr << "OTTransaction::" << __FUNCTION__
-                      << ": Unable to load Cron Item. Should never happen. "
-                         "Receipt: " << GetTransactionNum()
-                      << "  Origin: " << GetNumberOfOrigin() << "\n";
-                return false;
-            }
+            theReturnID.SetString(pSmart->GetLastRecipientUserID());
+            return true;
         }
-        break; // this break never actually happens. Above always returns, if
-               // triggered.
-
+        else if (nullptr !=
+                   pPlan) // else if it is any other kind of cron item...
+        {
+            theReturnID = pPlan->GetRecipientUserID();
+            return true;
+        }
+        else {
+            otErr << "OTTransaction::" << __FUNCTION__
+                  << ": Unable to load Cron Item. Should never happen. "
+                     "Receipt: " << GetTransactionNum()
+                  << "  Origin: " << GetNumberOfOrigin() << "\n";
+            return false;
+        }
+    }
+    break; // this break never actually happens. Above always returns, if
+           // triggered.
+           */
     case OTTransaction::instrumentNotice: {
         /*
          Therefore, if I am looping through my Nymbox, iterating through
@@ -6425,45 +6428,47 @@ bool OTTransaction::GetSenderAcctIDForDisplay(OTIdentifier& theReturnID)
     if (strReference.GetLength() < 2) return false;
 
     switch (GetType()) {
-    case OTTransaction::paymentReceipt: {
-        OTString strUpdatedCronItem;
-        OTItem* pItem = GetItem(OTItem::paymentReceipt);
+    /*
+case OTTransaction::paymentReceipt: {
+    OTString strUpdatedCronItem;
+    OTItem* pItem = GetItem(OTItem::paymentReceipt);
 
-        if (nullptr != pItem)
-            pItem->GetAttachment(strUpdatedCronItem);
-        else
-            otErr << "OTTransaction::" << __FUNCTION__
-                  << ": Failed trying to get paymentReceipt item from "
-                     "paymentReceipt transaction.\n";
+    if (nullptr != pItem)
+        pItem->GetAttachment(strUpdatedCronItem);
+    else
+        otErr << "OTTransaction::" << __FUNCTION__
+              << ": Failed trying to get paymentReceipt item from "
+                 "paymentReceipt transaction.\n";
 
-        std::unique_ptr<OTCronItem> pCronItem(
-            OTCronItem::NewCronItem(strUpdatedCronItem));
+    std::unique_ptr<OTCronItem> pCronItem(
+        OTCronItem::NewCronItem(strUpdatedCronItem));
 
-        OTSmartContract* pSmart =
-            dynamic_cast<OTSmartContract*>(pCronItem.get());
+    OTSmartContract* pSmart =
+        dynamic_cast<OTSmartContract*>(pCronItem.get());
 
-        if (nullptr != pSmart) // if it's a smart contract...
-        {
-            if (!pSmart->GetLastSenderAcctID().Exists()) return false;
+    if (nullptr != pSmart) // if it's a smart contract...
+    {
+        if (!pSmart->GetLastSenderAcctID().Exists()) return false;
 
-            theReturnID.SetString(pSmart->GetLastSenderAcctID());
-            return true;
-        }
-        else if (nullptr !=
-                   pCronItem) // else if it is any other kind of cron item...
-        {
-            theReturnID = pCronItem->GetSenderAcctID();
-            return true;
-        }
-        else {
-            otErr
-                << "OTTransaction::" << __FUNCTION__
-                << ": Unable to load Cron Item. Should never happen. Receipt: "
-                << GetTransactionNum() << "  Origin: " << GetNumberOfOrigin()
-                << "\n";
-            return false;
-        }
-    } break;
+        theReturnID.SetString(pSmart->GetLastSenderAcctID());
+        return true;
+    }
+    else if (nullptr !=
+               pCronItem) // else if it is any other kind of cron item...
+    {
+        theReturnID = pCronItem->GetSenderAcctID();
+        return true;
+    }
+    else {
+        otErr
+            << "OTTransaction::" << __FUNCTION__
+            << ": Unable to load Cron Item. Should never happen. Receipt: "
+            << GetTransactionNum() << "  Origin: " << GetNumberOfOrigin()
+            << "\n";
+        return false;
+    }
+} break;
+    */
     case OTTransaction::pending: // amount is stored on the transfer item, on my
                                  // list of items.
     case OTTransaction::chequeReceipt:  // amount is stored on cheque (attached
@@ -6560,48 +6565,49 @@ bool OTTransaction::GetRecipientAcctIDForDisplay(OTIdentifier& theReturnID)
     GetReferenceString(strReference);
 
     switch (GetType()) {
-    case OTTransaction::paymentReceipt: {
-        OTString strUpdatedCronItem;
-        OTItem* pItem = GetItem(OTItem::paymentReceipt);
+    /*
+case OTTransaction::paymentReceipt: {
+    OTString strUpdatedCronItem;
+    OTItem* pItem = GetItem(OTItem::paymentReceipt);
 
-        if (nullptr != pItem)
-            pItem->GetAttachment(strUpdatedCronItem);
-        else
-            otErr << "OTTransaction::" << __FUNCTION__
-                  << ": Failed trying to get paymentReceipt item from "
-                     "paymentReceipt transaction.\n";
+    if (nullptr != pItem)
+        pItem->GetAttachment(strUpdatedCronItem);
+    else
+        otErr << "OTTransaction::" << __FUNCTION__
+              << ": Failed trying to get paymentReceipt item from "
+                 "paymentReceipt transaction.\n";
 
-        std::unique_ptr<OTCronItem> pCronItem(
-            OTCronItem::NewCronItem(strUpdatedCronItem));
+    std::unique_ptr<OTCronItem> pCronItem(
+        OTCronItem::NewCronItem(strUpdatedCronItem));
 
-        OTSmartContract* pSmart =
-            dynamic_cast<OTSmartContract*>(pCronItem.get());
-        OTPaymentPlan* pPlan = dynamic_cast<OTPaymentPlan*>(pCronItem.get());
+    OTSmartContract* pSmart =
+        dynamic_cast<OTSmartContract*>(pCronItem.get());
+    OTPaymentPlan* pPlan = dynamic_cast<OTPaymentPlan*>(pCronItem.get());
 
-        if (nullptr != pSmart) // if it's a smart contract...
-        {
-            if (!pSmart->GetLastRecipientAcctID().Exists()) return false;
+    if (nullptr != pSmart) // if it's a smart contract...
+    {
+        if (!pSmart->GetLastRecipientAcctID().Exists()) return false;
 
-            theReturnID.SetString(pSmart->GetLastRecipientAcctID());
-            return true;
-        }
-        else if (nullptr != pPlan) // else if it's a payment plan.
-        {
-            theReturnID = pPlan->GetRecipientAcctID();
-            return true;
-        }
-        else // else if it is any other kind of cron item...
-        {
-            otErr
-                << "OTTransaction::" << __FUNCTION__
-                << ": Unable to load Cron Item. Should never happen. Receipt: "
-                << GetTransactionNum() << "  Origin: " << GetNumberOfOrigin()
-                << "\n";
-            return false;
-        }
-    } break; // this break never actually happens. Above always returns, if
-             // triggered.
-
+        theReturnID.SetString(pSmart->GetLastRecipientAcctID());
+        return true;
+    }
+    else if (nullptr != pPlan) // else if it's a payment plan.
+    {
+        theReturnID = pPlan->GetRecipientAcctID();
+        return true;
+    }
+    else // else if it is any other kind of cron item...
+    {
+        otErr
+            << "OTTransaction::" << __FUNCTION__
+            << ": Unable to load Cron Item. Should never happen. Receipt: "
+            << GetTransactionNum() << "  Origin: " << GetNumberOfOrigin()
+            << "\n";
+        return false;
+    }
+} break; // this break never actually happens. Above always returns, if
+         // triggered.
+         */
     case OTTransaction::pending:
     case OTTransaction::transferReceipt:
     case OTTransaction::chequeReceipt:
@@ -6690,49 +6696,50 @@ bool OTTransaction::GetMemo(OTString& strMemo)
     GetReferenceString(strReference);
 
     switch (GetType()) {
-    case OTTransaction::paymentReceipt: {
-        OTString strUpdatedCronItem;
-        OTItem* pItem = GetItem(OTItem::paymentReceipt);
+    /*
+case OTTransaction::paymentReceipt: {
+    OTString strUpdatedCronItem;
+    OTItem* pItem = GetItem(OTItem::paymentReceipt);
 
-        if (nullptr != pItem)
-            pItem->GetAttachment(strUpdatedCronItem);
-        else
-            otErr << "OTTransaction::" << __FUNCTION__
-                  << ": Failed trying to get paymentReceipt item from "
-                     "paymentReceipt transaction.\n";
+    if (nullptr != pItem)
+        pItem->GetAttachment(strUpdatedCronItem);
+    else
+        otErr << "OTTransaction::" << __FUNCTION__
+              << ": Failed trying to get paymentReceipt item from "
+                 "paymentReceipt transaction.\n";
 
-        std::unique_ptr<OTCronItem> pCronItem(
-            OTCronItem::NewCronItem(strUpdatedCronItem));
+    std::unique_ptr<OTCronItem> pCronItem(
+        OTCronItem::NewCronItem(strUpdatedCronItem));
 
-        OTSmartContract* pSmart =
-            dynamic_cast<OTSmartContract*>(pCronItem.get());
-        OTPaymentPlan* pPlan = dynamic_cast<OTPaymentPlan*>(pCronItem.get());
+    OTSmartContract* pSmart =
+        dynamic_cast<OTSmartContract*>(pCronItem.get());
+    OTPaymentPlan* pPlan = dynamic_cast<OTPaymentPlan*>(pCronItem.get());
 
-        if (nullptr != pSmart) // if it's a smart contract...
-        {
-            // NOTE: smart contracts currently do not have a "memo" field.
+    if (nullptr != pSmart) // if it's a smart contract...
+    {
+        // NOTE: smart contracts currently do not have a "memo" field.
 
-            return false;
-        }
-        else if (nullptr != pPlan) // else if it is a payment plan.
-        {
-            if (pPlan->GetConsideration().Exists())
-                strMemo.Set(pPlan->GetConsideration());
+        return false;
+    }
+    else if (nullptr != pPlan) // else if it is a payment plan.
+    {
+        if (pPlan->GetConsideration().Exists())
+            strMemo.Set(pPlan->GetConsideration());
 
-            return true;
-        }
-        else // else if it's any other kind of cron item.
-        {
-            otErr
-                << "OTTransaction::" << __FUNCTION__
-                << ": Unable to load Cron Item. Should never happen. Receipt: "
-                << GetTransactionNum() << "  Origin: " << GetNumberOfOrigin()
-                << "\n";
-            return false;
-        }
-    } break; // this break never actually happens. Above always returns, if
-             // triggered.
-
+        return true;
+    }
+    else // else if it's any other kind of cron item.
+    {
+        otErr
+            << "OTTransaction::" << __FUNCTION__
+            << ": Unable to load Cron Item. Should never happen. Receipt: "
+            << GetTransactionNum() << "  Origin: " << GetNumberOfOrigin()
+            << "\n";
+        return false;
+    }
+} break; // this break never actually happens. Above always returns, if
+         // triggered.
+         */
     case OTTransaction::pending:
     case OTTransaction::transferReceipt:
     case OTTransaction::chequeReceipt:

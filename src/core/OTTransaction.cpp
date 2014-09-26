@@ -132,7 +132,7 @@
 
 #include "stdafx.hpp"
 
-#include "recurring/OTPaymentPlan.hpp"
+//#include "recurring/OTPaymentPlan.hpp"
 //#include "script/OTSmartContract.hpp"
 #include "OTTransaction.hpp"
 #include "OTCheque.hpp"
@@ -489,229 +489,277 @@ bool OTTransaction::HarvestOpeningNumber(
             // //bSave=false, pSignerNym=nullptr
         }
         break;
+    /*
+// These aren't AS simple.
+case OTTransaction::paymentPlan: // Uses 4 transaction #s: the opener
+                                 // (sender's #), which burned on failure
+                                 // but kept alive on success,
+    // the sender's closer, which is only marked as "used" upon success, and
+    // the recipient's opening and
+    // closing numbers, which are both only marked as "used" upon success.
+    {
+        // The PAYER's (sender) opening number is burned just from TRYING a
+        // transaction. It's only left
+        // open if the transaction succeeds (but in that case, it's still
+        // marked as "used.") But the
+        // PAYEE's (recipient) opening number isn't marked as "used" UNLESS
+        // the transaction succeeds.
+        //
+        // Basically a failed transaction means the sender's opening number
+        // is burned and gone, but the
+        // recipient's must be clawed back!! Whereas if the message fails
+        // (before transaction even has a
+        // chance to run) then BOTH sender and recipient can claw back their
+        // numbers. The only way to tell
+        // the difference is to look at the message itself (the info isn't
+        // stored here in the transaction.)
+        //
+        // 1.
+        // Therefore we must assume that the CALLER OF THIS FUNCTION knows.
+        // If the message failed, he knows
+        // this, and he SPECIFICALLY called HarvestOpeningNumber() ANYWAY,
+        // to get the opening number back
+        // (when normally he would only recoup the closed numbers--therefore
+        // he MUST know that the message
+        // failed and that the number is thus still good!)
+        //
+        // 2.
+        // WHEREAS if the message SUCCEEDED (followed by transaction FAIL),
+        // then the payer/sender already
+        // used his opening number, whereas the recipient DID NOT! Again,
+        // the caller MUST KNOW THIS ALREADY.
+        // The caller wouldn't call "HarvestOpeningNumber" for a burned
+        // number (of the sender.) Therefore
+        // he must be calling it to recoup the (still issued) opening number
+        // of the RECIPIENT.
+        //
+        // Problems:
+        // 1. What if caller is stupid, and message hasn't actually failed?
+        // What if caller is mistakenly
+        //    trying to recoup numbers that are actually burned already?
+        // Well, the opening number is already
+        //    marked as "used but still issued" so when I try to claw it
+        // back, that will work (because it
+        //    only adds a number BACK after it can confirm that the number
+        // WAS issued to me in the first place,
+        //    and in this case, that verification will succeed.)
+        //    THEREFORE: need to explicitly pass the message's
+        // success/failure status into the current
+        //    function. IF the msg was a failure, the transaction never had
+        // a chance to run and thus the
+        //    opening number is still good, and we can claw it back. But if
+        // the message was a SUCCESS, then
+        //    the transaction definitely TRIED to run, which means the
+        // opening number is now burned. (IF
+        //    the transaction itself failed, that is. Otherwise if it
+        // succeeded, then it's possible, in the
+        //    cases of transfer and marketOffer, that the opening number is
+        // STILL "used but issued", until
+        //    you finally close out your transferReceipt or the finalReceipt
+        // for your market offer.)
+        //
+        // 2. What if caller is stupid, and he called HarvestOpeningNumber
+        // for the sender, even though the
+        //    number was already burned in the original attempt? (Which we
+        // know it was, since the message
+        //    itself succeeded.) The sender, of course, has that number on
+        // his "issued" list, so his clawback
+        //    will succeed, putting him out of sync.
+        //
+        // 3. What if the recipient is passed into this function? His
+        // "opening number" is not the primary
+        //    one, but rather, there are three "closing numbers" on a
+        // payment plan. One for the sender, to
+        //    match his normal opening number, and 2 more for the recipient
+        // (an opening and closing number).
+        //    Therefore in the case of the recipient, need to grab HIS
+        // opening number, not the sender's.
+        //    (Therefore need to know whether Nym is sender or recipient.)
+        // Is that actually true? Or won't
+        //    the harvest process be smart enough to figure that out
+        // already? And will it know that the
+        //    recipient still needs to harvest HIS opening number, even if
+        // the transaction was attempted,
+        //    since the recipient's number wasn't marked as "used" unless
+        // the transaction itself succeeded.
+        //    NOTE: CronItem/Agreement/PaymentPlan is definitely smart
+        // enough already to know if the Nym is
+        //    the sender or recipient. It will only grab the appropriate
+        // number for the right Nym. But here
+        //    in THIS function we still have to be smart enough not to call
+        // it for the SENDER if the transaction
+        //    was attempted (because it must be burned already), but TO call
+        // it for the sender if the transaction
+        //    was not even attempted (meaning it wasn't burned yet.)
+        // Similarly, this function has to be smart
+        //    enough TO call it for the recipient if transaction was
+        // attempted but didn't succeed, since the
+        //    recipient's opening number is still good in that case.
+        //
 
-    // These aren't AS simple.
-    case OTTransaction::paymentPlan: // Uses 4 transaction #s: the opener
-                                     // (sender's #), which burned on failure
-                                     // but kept alive on success,
-        // the sender's closer, which is only marked as "used" upon success, and
-        // the recipient's opening and
-        // closing numbers, which are both only marked as "used" upon success.
+        const OTIdentifier theNymID(theNym);
+
+        // Assumption: if theNymID matches GetUserID(), then theNym
+        // must be the SENDER / PAYER!
+        // Else, he must be RECIPIENT / PAYEE, instead!
+        // This assumption is not for proving, since the harvest functions
+        // will verify the Nym's identity
+        // anyway. Instead, this assumption is merely for deciding which
+        // logic to use about which harvest
+        // functions to call.
+        //
+        if (theNymID == GetUserID()) // theNym is SENDER / PAYER
         {
-            // The PAYER's (sender) opening number is burned just from TRYING a
-            // transaction. It's only left
-            // open if the transaction succeeds (but in that case, it's still
-            // marked as "used.") But the
-            // PAYEE's (recipient) opening number isn't marked as "used" UNLESS
-            // the transaction succeeds.
+            // If the server reply message was unambiguously a FAIL, that
+            // means the opening number is STILL GOOD.
+            // (Because the transaction therefore never even had a chance to
+            // run.)
             //
-            // Basically a failed transaction means the sender's opening number
-            // is burned and gone, but the
-            // recipient's must be clawed back!! Whereas if the message fails
-            // (before transaction even has a
-            // chance to run) then BOTH sender and recipient can claw back their
-            // numbers. The only way to tell
-            // the difference is to look at the message itself (the info isn't
-            // stored here in the transaction.)
+            if (bReplyWasFailure && !bHarvestingForRetry) {
+                bSuccess = theNym.ClawbackTransactionNumber(
+                    GetPurportedServerID(),
+                    GetTransactionNum()); // bSave=false, pSignerNym=nullptr
+            }
+            // Else if the server reply message was unambiguously a SUCCESS,
+            // that means the opening number is DEFINITELY
+            // NOT HARVESTABLE. (For the sender, anyway.) Why not? Because
+            // that means the transaction definitely ran--and
+            // the opener is marked as "used" on success, and "burned" on
+            // failure--either way, that's bad for harvesting (no point.)
             //
-            // 1.
-            // Therefore we must assume that the CALLER OF THIS FUNCTION knows.
-            // If the message failed, he knows
-            // this, and he SPECIFICALLY called HarvestOpeningNumber() ANYWAY,
-            // to get the opening number back
-            // (when normally he would only recoup the closed numbers--therefore
-            // he MUST know that the message
-            // failed and that the number is thus still good!)
-            //
-            // 2.
-            // WHEREAS if the message SUCCEEDED (followed by transaction FAIL),
-            // then the payer/sender already
-            // used his opening number, whereas the recipient DID NOT! Again,
-            // the caller MUST KNOW THIS ALREADY.
-            // The caller wouldn't call "HarvestOpeningNumber" for a burned
-            // number (of the sender.) Therefore
-            // he must be calling it to recoup the (still issued) opening number
-            // of the RECIPIENT.
-            //
-            // Problems:
-            // 1. What if caller is stupid, and message hasn't actually failed?
-            // What if caller is mistakenly
-            //    trying to recoup numbers that are actually burned already?
-            // Well, the opening number is already
-            //    marked as "used but still issued" so when I try to claw it
-            // back, that will work (because it
-            //    only adds a number BACK after it can confirm that the number
-            // WAS issued to me in the first place,
-            //    and in this case, that verification will succeed.)
-            //    THEREFORE: need to explicitly pass the message's
-            // success/failure status into the current
-            //    function. IF the msg was a failure, the transaction never had
-            // a chance to run and thus the
-            //    opening number is still good, and we can claw it back. But if
-            // the message was a SUCCESS, then
-            //    the transaction definitely TRIED to run, which means the
-            // opening number is now burned. (IF
-            //    the transaction itself failed, that is. Otherwise if it
-            // succeeded, then it's possible, in the
-            //    cases of transfer and marketOffer, that the opening number is
-            // STILL "used but issued", until
-            //    you finally close out your transferReceipt or the finalReceipt
-            // for your market offer.)
-            //
-            // 2. What if caller is stupid, and he called HarvestOpeningNumber
-            // for the sender, even though the
-            //    number was already burned in the original attempt? (Which we
-            // know it was, since the message
-            //    itself succeeded.) The sender, of course, has that number on
-            // his "issued" list, so his clawback
-            //    will succeed, putting him out of sync.
-            //
-            // 3. What if the recipient is passed into this function? His
-            // "opening number" is not the primary
-            //    one, but rather, there are three "closing numbers" on a
-            // payment plan. One for the sender, to
-            //    match his normal opening number, and 2 more for the recipient
-            // (an opening and closing number).
-            //    Therefore in the case of the recipient, need to grab HIS
-            // opening number, not the sender's.
-            //    (Therefore need to know whether Nym is sender or recipient.)
-            // Is that actually true? Or won't
-            //    the harvest process be smart enough to figure that out
-            // already? And will it know that the
-            //    recipient still needs to harvest HIS opening number, even if
-            // the transaction was attempted,
-            //    since the recipient's number wasn't marked as "used" unless
-            // the transaction itself succeeded.
-            //    NOTE: CronItem/Agreement/PaymentPlan is definitely smart
-            // enough already to know if the Nym is
-            //    the sender or recipient. It will only grab the appropriate
-            // number for the right Nym. But here
-            //    in THIS function we still have to be smart enough not to call
-            // it for the SENDER if the transaction
-            //    was attempted (because it must be burned already), but TO call
-            // it for the sender if the transaction
-            //    was not even attempted (meaning it wasn't burned yet.)
-            // Similarly, this function has to be smart
-            //    enough TO call it for the recipient if transaction was
-            // attempted but didn't succeed, since the
-            //    recipient's opening number is still good in that case.
-            //
-
-            const OTIdentifier theNymID(theNym);
-
-            // Assumption: if theNymID matches GetUserID(), then theNym
-            // must be the SENDER / PAYER!
-            // Else, he must be RECIPIENT / PAYEE, instead!
-            // This assumption is not for proving, since the harvest functions
-            // will verify the Nym's identity
-            // anyway. Instead, this assumption is merely for deciding which
-            // logic to use about which harvest
-            // functions to call.
-            //
-            if (theNymID == GetUserID()) // theNym is SENDER / PAYER
-            {
-                // If the server reply message was unambiguously a FAIL, that
-                // means the opening number is STILL GOOD.
-                // (Because the transaction therefore never even had a chance to
-                // run.)
-                //
-                if (bReplyWasFailure && !bHarvestingForRetry) {
-                    bSuccess = theNym.ClawbackTransactionNumber(
-                        GetPurportedServerID(),
-                        GetTransactionNum()); // bSave=false, pSignerNym=nullptr
+            else if (bReplyWasSuccess) {
+                if (bTransactionWasSuccess) {
+                    // This means the "paymentPlan" transaction# is MARKED
+                    // AS "USED", and will someday be marked as CLOSED.
+                    // EITHER WAY, you certainly can't claw that number back
+                    // now! (It is still outstanding, though. It's not gone,
+                    // yet...)
+                    //                      bSuccess =
+                    // theNym.ClawbackTransactionNumber(GetPurportedServerID(),
+                    // GetTransactionNum());
+                    // //bSave=false, pSignerNym=nullptr
                 }
-                // Else if the server reply message was unambiguously a SUCCESS,
-                // that means the opening number is DEFINITELY
-                // NOT HARVESTABLE. (For the sender, anyway.) Why not? Because
-                // that means the transaction definitely ran--and
-                // the opener is marked as "used" on success, and "burned" on
-                // failure--either way, that's bad for harvesting (no point.)
-                //
-                else if (bReplyWasSuccess) {
-                    if (bTransactionWasSuccess) {
-                        // This means the "paymentPlan" transaction# is MARKED
-                        // AS "USED", and will someday be marked as CLOSED.
-                        // EITHER WAY, you certainly can't claw that number back
-                        // now! (It is still outstanding, though. It's not gone,
-                        // yet...)
-                        //                      bSuccess =
-                        // theNym.ClawbackTransactionNumber(GetPurportedServerID(),
-                        //                                                                  GetTransactionNum());
-                        // //bSave=false, pSignerNym=nullptr
-                    }
-                    else if (bTransactionWasFailure) {
-                        // Whereas if the transaction was a failure, that means
-                        // the transaction number was DEFINITELY burned.
-                        // (No point clawing it back now--it's gone already.)
-                        //                      bSuccess =
-                        // theNym.ClawbackTransactionNumber(GetPurportedServerID(),
-                        //                                                                  GetTransactionNum());
-                        // //bSave=false, pSignerNym=nullptr
-                    }
+                else if (bTransactionWasFailure) {
+                    // Whereas if the transaction was a failure, that means
+                    // the transaction number was DEFINITELY burned.
+                    // (No point clawing it back now--it's gone already.)
+                    //                      bSuccess =
+                    // theNym.ClawbackTransactionNumber(GetPurportedServerID(),
+                    // GetTransactionNum());
+                    // //bSave=false, pSignerNym=nullptr
                 }
             }
+        }
 
-            // theNym is RECIPIENT / PAYEE
+        // theNym is RECIPIENT / PAYEE
+        //
+        // This case is slightly different because above, a successful
+        // message with a failed transaction will burn the
+        // opening number, whereas here, if the message is successful but
+        // the transaction is failed, the recipient's
+        // opening transaction number is STILL GOOD and can be harvested!
+        // TODO: Make sure payment plans drop a NOTICE
+        // to the recipient, so he can harvest his numbers when this happens
+        // (similar to todos I have for smart contracts.)
+        //
+        // The other big difference with the recipient is that he has a
+        // different opening and closing number than the sender
+        // does, so I need to see if I can get those from the transaction,
+        // or if I have to load up the attached cron item
+        // to get that data.
+        //
+        else // theNym is RECIPIENT / PAYEE
+        {
+            // What is this class doing here?
+            // Answer: it's the C++ equivalent of local functions.
             //
-            // This case is slightly different because above, a successful
-            // message with a failed transaction will burn the
-            // opening number, whereas here, if the message is successful but
-            // the transaction is failed, the recipient's
-            // opening transaction number is STILL GOOD and can be harvested!
-            // TODO: Make sure payment plans drop a NOTICE
-            // to the recipient, so he can harvest his numbers when this happens
-            // (similar to todos I have for smart contracts.)
-            //
-            // The other big difference with the recipient is that he has a
-            // different opening and closing number than the sender
-            // does, so I need to see if I can get those from the transaction,
-            // or if I have to load up the attached cron item
-            // to get that data.
-            //
-            else // theNym is RECIPIENT / PAYEE
+            class _getRecipientOpeningNum
             {
-                // What is this class doing here?
-                // Answer: it's the C++ equivalent of local functions.
-                //
-                class _getRecipientOpeningNum
+            public:
+                int64_t Run(OTTransaction& theTransaction)
                 {
-                public:
-                    int64_t Run(OTTransaction& theTransaction)
-                    {
-                        OTItem* pItem =
-                            theTransaction.GetItem(OTItem::paymentPlan);
-                        if (nullptr != pItem) {
-                            // Also load up the Payment Plan from inside the
-                            // transaction item.
-                            //
-                            OTString strPaymentPlan;
-                            OTPaymentPlan thePlan;
-                            pItem->GetAttachment(strPaymentPlan);
+                    OTItem* pItem =
+                        theTransaction.GetItem(OTItem::paymentPlan);
+                    if (nullptr != pItem) {
+                        // Also load up the Payment Plan from inside the
+                        // transaction item.
+                        //
+                        OTString strPaymentPlan;
+                        OTPaymentPlan thePlan;
+                        pItem->GetAttachment(strPaymentPlan);
 
-                            if (strPaymentPlan.Exists() &&
-                                thePlan.LoadContractFromString(strPaymentPlan))
-                                return thePlan.GetRecipientOpeningNum();
-                            else
-                                otErr << "OTTransaction::HarvestOpeningNumber: "
-                                         "Error: Unable to load "
-                                         "paymentPlan object from paymentPlan "
-                                         "transaction item.\n";
-                        }
+                        if (strPaymentPlan.Exists() &&
+                            thePlan.LoadContractFromString(strPaymentPlan))
+                            return thePlan.GetRecipientOpeningNum();
                         else
                             otErr << "OTTransaction::HarvestOpeningNumber: "
-                                     "Error: Unable to find "
-                                     "paymentPlan item in paymentPlan "
-                                     "transaction.\n";
-                        return 0;
+                                     "Error: Unable to load "
+                                     "paymentPlan object from paymentPlan "
+                                     "transaction item.\n";
                     }
-                }; // class _getRecipientOpeningNum
+                    else
+                        otErr << "OTTransaction::HarvestOpeningNumber: "
+                                 "Error: Unable to find "
+                                 "paymentPlan item in paymentPlan "
+                                 "transaction.\n";
+                    return 0;
+                }
+            }; // class _getRecipientOpeningNum
 
-                // If the server reply message was unambiguously a FAIL, that
-                // means the opening number is STILL GOOD.
-                // (Because the transaction therefore never even had a chance to
-                // run.)
-                //
-                if (bReplyWasFailure && !bHarvestingForRetry) {
+            // If the server reply message was unambiguously a FAIL, that
+            // means the opening number is STILL GOOD.
+            // (Because the transaction therefore never even had a chance to
+            // run.)
+            //
+            if (bReplyWasFailure && !bHarvestingForRetry) {
+                _getRecipientOpeningNum getRecipientOpeningNum;
+                const int64_t lRecipientOpeningNum =
+                    getRecipientOpeningNum.Run(*this);
+
+                if (lRecipientOpeningNum > 0)
+                    bSuccess = theNym.ClawbackTransactionNumber(
+                        GetPurportedServerID(),
+                        lRecipientOpeningNum); // bSave=false,
+                                               // pSignerNym=nullptr
+            }
+            // Else if the server reply message was unambiguously a SUCCESS,
+            // then the next question is whether the
+            // TRANSACTION INSIDE IT was also a success, or if there's a
+            // "success message / failed transaction" situation
+            // going on here. For the recipient, that's important: in the
+            // first case, his opener is definitely marked as "used
+            // but still outstanding" and CANNOT be harvested. But in the
+            // second case, unlike with the sender, his opener IS
+            // harvestable!
+            // This is because of a peculiarity with payment plans: the
+            // recipient's opening number is not marked as used until
+            // the transaction itself is a success!
+            //
+            else if (bReplyWasSuccess) {
+                if (bTransactionWasSuccess) // The opener is DEFINITELY
+                                            // marked as "used but still
+                                            // outstanding" and CANNOT be
+                                            // harvested.
+                {
+                    // This means the "paymentPlan" transaction# is MARKED
+                    // AS "USED", and will someday be marked as CLOSED.
+                    // EITHER WAY, you certainly can't claw that number back
+                    // now! (It is still outstanding, though. It's not gone,
+                    // yet...)
+                    //                      bSuccess =
+                    // theNym.ClawbackTransactionNumber(GetPurportedServerID(),
+                    // RECIPIENTS--OPENING--NUMBER--GOES--HERE);
+                    // //bSave=false, pSignerNym=nullptr
+                }
+                else if (bTransactionWasFailure && !bHarvestingForRetry) {
+                    // In this case, unlike with the sender, the recipient's
+                    // opener IS still harvestable! This is because
+                    // of a peculiarity with payment plans: the recipient's
+                    // opening number is not marked as used until the
+                    // transaction itself is a success! Therefore, if the
+                    // transaction was a failure, that means the recipient's
+                    // opening number is DEFINITELY STILL GOOD.
+                    //
                     _getRecipientOpeningNum getRecipientOpeningNum;
                     const int64_t lRecipientOpeningNum =
                         getRecipientOpeningNum.Run(*this);
@@ -722,59 +770,11 @@ bool OTTransaction::HarvestOpeningNumber(
                             lRecipientOpeningNum); // bSave=false,
                                                    // pSignerNym=nullptr
                 }
-                // Else if the server reply message was unambiguously a SUCCESS,
-                // then the next question is whether the
-                // TRANSACTION INSIDE IT was also a success, or if there's a
-                // "success message / failed transaction" situation
-                // going on here. For the recipient, that's important: in the
-                // first case, his opener is definitely marked as "used
-                // but still outstanding" and CANNOT be harvested. But in the
-                // second case, unlike with the sender, his opener IS
-                // harvestable!
-                // This is because of a peculiarity with payment plans: the
-                // recipient's opening number is not marked as used until
-                // the transaction itself is a success!
-                //
-                else if (bReplyWasSuccess) {
-                    if (bTransactionWasSuccess) // The opener is DEFINITELY
-                                                // marked as "used but still
-                                                // outstanding" and CANNOT be
-                                                // harvested.
-                    {
-                        // This means the "paymentPlan" transaction# is MARKED
-                        // AS "USED", and will someday be marked as CLOSED.
-                        // EITHER WAY, you certainly can't claw that number back
-                        // now! (It is still outstanding, though. It's not gone,
-                        // yet...)
-                        //                      bSuccess =
-                        // theNym.ClawbackTransactionNumber(GetPurportedServerID(),
-                        //                                                                  RECIPIENTS--OPENING--NUMBER--GOES--HERE);
-                        // //bSave=false, pSignerNym=nullptr
-                    }
-                    else if (bTransactionWasFailure && !bHarvestingForRetry) {
-                        // In this case, unlike with the sender, the recipient's
-                        // opener IS still harvestable! This is because
-                        // of a peculiarity with payment plans: the recipient's
-                        // opening number is not marked as used until the
-                        // transaction itself is a success! Therefore, if the
-                        // transaction was a failure, that means the recipient's
-                        // opening number is DEFINITELY STILL GOOD.
-                        //
-                        _getRecipientOpeningNum getRecipientOpeningNum;
-                        const int64_t lRecipientOpeningNum =
-                            getRecipientOpeningNum.Run(*this);
-
-                        if (lRecipientOpeningNum > 0)
-                            bSuccess = theNym.ClawbackTransactionNumber(
-                                GetPurportedServerID(),
-                                lRecipientOpeningNum); // bSave=false,
-                                                       // pSignerNym=nullptr
-                    }
-                }
             }
         }
-        break;
-
+    }
+    break;
+    */
     // TODO: Make sure that when a user receives a success notice that a smart
     // contract has been started up,
     // that he marks his opener as "burned" instead of as "used." It's gone!
@@ -1027,106 +1027,107 @@ bool OTTransaction::HarvestClosingNumbers(
             }     // pItem was found.
         }
         break;
+    /*
+// These aren't AS simple.
+case OTTransaction::paymentPlan: // Uses 4 transaction #s: the opener
+                                 // (sender's #), which is burned on
+    // transaction failure, but kept alive on success,
+    // ===> the sender's closing #, which is only marked as "used" upon
+    // success (harvestable up until that point.)
+    // ===> and the recipient's opening/closing numbers, which are also both
+    // only marked as "used" upon success, and are harvestable up until that
+    // point.
 
-    // These aren't AS simple.
-    case OTTransaction::paymentPlan: // Uses 4 transaction #s: the opener
-                                     // (sender's #), which is burned on
-        // transaction failure, but kept alive on success,
-        // ===> the sender's closing #, which is only marked as "used" upon
-        // success (harvestable up until that point.)
-        // ===> and the recipient's opening/closing numbers, which are also both
-        // only marked as "used" upon success, and are harvestable up until that
-        // point.
+    {
+        OTItem* pItem = GetItem(OTItem::paymentPlan);
 
+        if (nullptr == pItem) {
+            otErr << "OTTransaction::HarvestClosingNumbers: Error: Unable "
+                     "to find "
+                     "paymentPlan item in paymentPlan transaction.\n";
+        }
+        else // pItem is good. Let's load up the OTPaymentPlan object...
         {
-            OTItem* pItem = GetItem(OTItem::paymentPlan);
+            OTString strPaymentPlan;
+            OTPaymentPlan thePlan;
+            pItem->GetAttachment(strPaymentPlan);
 
-            if (nullptr == pItem) {
-                otErr << "OTTransaction::HarvestClosingNumbers: Error: Unable "
-                         "to find "
-                         "paymentPlan item in paymentPlan transaction.\n";
+            // First load the payment plan up...
+            const bool bLoadContractFromString =
+                (strPaymentPlan.Exists() &&
+                 thePlan.LoadContractFromString(strPaymentPlan));
+
+            // If failed to load the payment plan from string...
+            if (!bLoadContractFromString) {
+                otErr << "OTTransaction::HarvestClosingNumbers: ERROR: "
+                         "Failed loading payment plan from string:\n\n"
+                      << strPaymentPlan << "\n\n";
             }
-            else // pItem is good. Let's load up the OTPaymentPlan object...
+            else // thePlan is ready to go....
             {
-                OTString strPaymentPlan;
-                OTPaymentPlan thePlan;
-                pItem->GetAttachment(strPaymentPlan);
-
-                // First load the payment plan up...
-                const bool bLoadContractFromString =
-                    (strPaymentPlan.Exists() &&
-                     thePlan.LoadContractFromString(strPaymentPlan));
-
-                // If failed to load the payment plan from string...
-                if (!bLoadContractFromString) {
-                    otErr << "OTTransaction::HarvestClosingNumbers: ERROR: "
-                             "Failed loading payment plan from string:\n\n"
-                          << strPaymentPlan << "\n\n";
-                }
-                else // thePlan is ready to go....
+                // If the server reply message was unambiguously a FAIL,
+                // that means the closing numbers are STILL GOOD.
+                // (Because the transaction therefore never even had a
+                // chance to run.)
+                //
+                if (bReplyWasFailure &&
+                    !bHarvestingForRetry) // on re-try, we need the closing
+                                          // #s to stay put, so the re-try
+                                          // has a chance to work.
                 {
-                    // If the server reply message was unambiguously a FAIL,
-                    // that means the closing numbers are STILL GOOD.
-                    // (Because the transaction therefore never even had a
-                    // chance to run.)
-                    //
-                    if (bReplyWasFailure &&
-                        !bHarvestingForRetry) // on re-try, we need the closing
-                                              // #s to stay put, so the re-try
-                                              // has a chance to work.
+                    thePlan.HarvestClosingNumbers(theNym);
+                    bSuccess = true;
+                }
+                // Else if the server reply message was unambiguously a
+                // SUCCESS, that means the opening number is DEFINITELY
+                // NOT HARVESTABLE. (For the sender, anyway.) Why not?
+                // Because that means the transaction definitely ran--and
+                // the opener is marked as "used" on success, and "burned"
+                // on failure--either way, that's bad for harvesting (no
+                // point.)
+                // The recipient, by contrast, actually retains
+                // harvestability on his opening number up until the very
+                // point of
+                // transaction success.
+                //
+                // ====> I know you are wondering:
+                // ====>    HOW ABOUT THE CLOSING NUMBERS?  (When message is
+                // success)
+                //  1. Transaction success: Sender and Recipient CANNOT
+                // harvest closing numbers, which are now marked as "used."
+                //  2. Transaction failed:  Sender and Recipient **CAN**
+                // both harvest their closing numbers.
+                //
+                else if (bReplyWasSuccess) {
+                    if (bTransactionWasSuccess) {
+                        // This means the "paymentPlan" closing trans#s are
+                        // MARKED AS "USED", and will someday be marked as
+                        // CLOSED.
+                        // EITHER WAY, you certainly can't claw that number
+                        // back now! (It is still outstanding, though. It's
+                        // not gone, yet...)
+                        // thePlan.HarvestClosingNumbers(theNym);
+                        //                          bSuccess = true;
+                    }
+                    else if (bTransactionWasFailure &&
+                               !bHarvestingForRetry) // on re-try, we need
+                                                     // the closing #s to
+                                                     // stay put, so the
+                                                     // re-try has a chance
+                                                     // to work.
                     {
+                        // Whereas if the payment plan was a failure, that
+                        // means the closing numbers are harvestable!
                         thePlan.HarvestClosingNumbers(theNym);
                         bSuccess = true;
                     }
-                    // Else if the server reply message was unambiguously a
-                    // SUCCESS, that means the opening number is DEFINITELY
-                    // NOT HARVESTABLE. (For the sender, anyway.) Why not?
-                    // Because that means the transaction definitely ran--and
-                    // the opener is marked as "used" on success, and "burned"
-                    // on failure--either way, that's bad for harvesting (no
-                    // point.)
-                    // The recipient, by contrast, actually retains
-                    // harvestability on his opening number up until the very
-                    // point of
-                    // transaction success.
-                    //
-                    // ====> I know you are wondering:
-                    // ====>    HOW ABOUT THE CLOSING NUMBERS?  (When message is
-                    // success)
-                    //  1. Transaction success: Sender and Recipient CANNOT
-                    // harvest closing numbers, which are now marked as "used."
-                    //  2. Transaction failed:  Sender and Recipient **CAN**
-                    // both harvest their closing numbers.
-                    //
-                    else if (bReplyWasSuccess) {
-                        if (bTransactionWasSuccess) {
-                            // This means the "paymentPlan" closing trans#s are
-                            // MARKED AS "USED", and will someday be marked as
-                            // CLOSED.
-                            // EITHER WAY, you certainly can't claw that number
-                            // back now! (It is still outstanding, though. It's
-                            // not gone, yet...)
-                            //                          thePlan.HarvestClosingNumbers(theNym);
-                            //                          bSuccess = true;
-                        }
-                        else if (bTransactionWasFailure &&
-                                   !bHarvestingForRetry) // on re-try, we need
-                                                         // the closing #s to
-                                                         // stay put, so the
-                                                         // re-try has a chance
-                                                         // to work.
-                        {
-                            // Whereas if the payment plan was a failure, that
-                            // means the closing numbers are harvestable!
-                            thePlan.HarvestClosingNumbers(theNym);
-                            bSuccess = true;
-                        }
-                    }
+                }
 
-                } // else (the payment plan loaded successfully)
-            }     // pItem was found.
-        }
-        break;
+            } // else (the payment plan loaded successfully)
+        }     // pItem was found.
+    }
+    break;
+    */
     /*
 case OTTransaction::smartContract: // Uses X transaction #s, with an opener
                                    // for each party and a closer for each
@@ -3894,8 +3895,9 @@ bool OTTransaction::GetSuccess()
                                       // "pay dividend" request.
         case OTItem::atMarketOffer:   // notarizeTransaction. server's reply to
                                       // request to place a market offer.
-        case OTItem::atPaymentPlan:   // notarizeTransaction. server's reply to
-                                      // request to activate a payment plan.
+        // case OTItem::atPaymentPlan:   // notarizeTransaction. server's reply
+        // to
+        // request to activate a payment plan.
         // case OTItem::atSmartContract: // notarizeTransaction. server's reply
         // to
         // request to activate a smart contract.
@@ -4032,10 +4034,10 @@ OTTransaction::transactionType OTTransaction::GetTypeFromString(
         theType = OTTransaction::marketOffer;
     else if (strType.Compare("atMarketOffer"))
         theType = OTTransaction::atMarketOffer;
-    else if (strType.Compare("paymentPlan"))
-        theType = OTTransaction::paymentPlan;
-    else if (strType.Compare("atPaymentPlan"))
-        theType = OTTransaction::atPaymentPlan;
+    // else if (strType.Compare("paymentPlan"))
+    //    theType = OTTransaction::paymentPlan;
+    // else if (strType.Compare("atPaymentPlan"))
+    //    theType = OTTransaction::atPaymentPlan;
     // else if (strType.Compare("smartContract"))
     //    theType = OTTransaction::smartContract;
     // else if (strType.Compare("atSmartContract"))
@@ -5884,8 +5886,8 @@ void OTTransaction::CalculateNumberOfOrigin()
     case marketOffer:   // this transaction is a market offer
     case atMarketOffer: // reply from the server regarding a market offer
 
-    case paymentPlan:   // this transaction is a payment plan
-    case atPaymentPlan: // reply from the server regarding a payment plan
+    // case paymentPlan:   // this transaction is a payment plan
+    // case atPaymentPlan: // reply from the server regarding a payment plan
 
     // case smartContract:   // this transaction is a smart contract
     // case atSmartContract: // reply from the server regarding a smart contract

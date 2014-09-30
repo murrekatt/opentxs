@@ -147,6 +147,7 @@ class OTCron;
 class OTIdentifier;
 class OTPseudonym;
 class OTString;
+class OTAccount;
 
 class OTCronItem : public OTTrackable
 {

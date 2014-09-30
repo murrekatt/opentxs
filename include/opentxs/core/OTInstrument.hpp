@@ -133,12 +133,12 @@
 #ifndef OPENTXS_CORE_OTINSTRUMENT_HPP
 #define OPENTXS_CORE_OTINSTRUMENT_HPP
 
-#include "script/OTScriptable.hpp"
+#include "opentxs/core/OTContract.hpp"
 
 namespace opentxs
 {
 
-class OTInstrument : public OTScriptable
+class OTInstrument : public OTContract
 {
 public:
     EXPORT OTInstrument();

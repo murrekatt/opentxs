@@ -133,7 +133,7 @@
 #ifndef OPENTXS_CORE_SCRIPT_OTSCRIPTABLE_HPP
 #define OPENTXS_CORE_SCRIPT_OTSCRIPTABLE_HPP
 
-#include "opentxs/core/OTContract.hpp"
+#include "opentxs/core/OTTrackable.hpp"
 
 namespace opentxs
 {
@@ -152,10 +152,10 @@ typedef std::map<std::string, OTClause*> mapOfClauses;
 typedef std::map<std::string, OTParty*> mapOfParties;
 typedef std::map<std::string, OTVariable*> mapOfVariables;
 
-class OTScriptable : public OTContract
+class OTScriptable : public OTTrackable
 {
 private: // Private prevents erroneous use by other classes.
-    typedef OTContract ot_super;
+    typedef OTTrackable ot_super;
 
 protected:
     mapOfParties m_mapParties; // The parties to the contract. Could be Nyms, or
@@ -434,6 +434,10 @@ public:
     static std::string GetTime(); // Returns a string, containing seconds as
                                   // int32_t. (Time in seconds.)
     OTScriptable();
+    OTScriptable(const OTIdentifier& SERVER_ID, const OTIdentifier& ASSET_ID);
+    OTScriptable(const OTIdentifier& SERVER_ID, const OTIdentifier& ASSET_ID,
+                 const OTIdentifier& ACCT_ID, const OTIdentifier& USER_ID);
+
     virtual ~OTScriptable();
 
     void UpdateContentsToString(OTString& strAppend, bool bCalculatingID) const;

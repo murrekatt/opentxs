@@ -137,9 +137,9 @@
 #ifndef OPENTXS_CORE_TRADE_OTMARKET_HPP
 #define OPENTXS_CORE_TRADE_OTMARKET_HPP
 
-#include "trade/OTOffer.hpp"
-#include "cron/OTCron.hpp"
-#include "../core/OTStorage.hpp"
+#include "opentxs/ext/trade/OTOffer.hpp"
+#include "opentxs/ext/cron/OTCron.hpp"
+#include "opentxs/core/OTStorage.hpp"
 
 namespace opentxs
 {

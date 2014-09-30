@@ -135,10 +135,11 @@
 #include "ClientConnection.hpp"
 #include "Macros.hpp"
 #include "ServerSettings.hpp"
+#include <opentxs/ext/trade/OTMarket.hpp>
+#include <opentxs/ext/script/OTParty.hpp>
+#include <opentxs/ext/script/OTSmartContract.hpp>
 #include <opentxs/basket/BasketContract.hpp>
 #include <opentxs/basket/Basket.hpp>
-#include <opentxs/core/script/OTParty.hpp>
-#include <opentxs/core/script/OTSmartContract.hpp>
 #include <opentxs/core/OTAssetContract.hpp>
 #include <opentxs/core/OTMessage.hpp>
 #include <opentxs/core/OTPseudonym.hpp>
@@ -150,7 +151,6 @@
 #include <opentxs/core/OTStorage.hpp>
 #include <opentxs/core/OTLedger.hpp>
 #include <opentxs/cash/Mint.hpp>
-#include <opentxs/core/trade/OTMarket.hpp>
 
 namespace opentxs
 {

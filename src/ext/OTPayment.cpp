@@ -135,10 +135,9 @@
 #include "OTPayment.hpp"
 #include "InstantiateContract.hpp"
 
+#include "../ext/recurring/OTPaymentPlan.hpp"
+#include "../ext/script/OTSmartContract.hpp"
 #include "../cash/Purse.hpp"
-
-#include "../core/recurring/OTPaymentPlan.hpp"
-#include "../core/script/OTSmartContract.hpp"
 #include "../core/OTCheque.hpp"
 #include "../core/OTLog.hpp"
 

@@ -136,7 +136,7 @@
 #ifndef OPENTXS_CORE_CRON_OTCRONITEM_HPP
 #define OPENTXS_CORE_CRON_OTCRONITEM_HPP
 
-#include "opentxs/core/OTTrackable.hpp"
+#include "opentxs/ext/script/OTScriptable.hpp"
 
 #include <deque>
 
@@ -149,13 +149,13 @@ class OTPseudonym;
 class OTString;
 class OTAccount;
 
-class OTCronItem : public OTTrackable
+class OTCronItem : public OTScriptable
 {
 public:
     OTCronItem();
 
 private: // Private prevents erroneous use by other classes.
-    typedef OTTrackable ot_super;
+    typedef OTScriptable ot_super;
 
 private:
     OTCron* m_pCron;

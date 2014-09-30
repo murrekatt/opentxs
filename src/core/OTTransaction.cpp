@@ -134,6 +134,7 @@
 
 //#include "recurring/OTPaymentPlan.hpp"
 //#include "script/OTSmartContract.hpp"
+#include "OTAccount.hpp"
 #include "OTTransaction.hpp"
 #include "OTCheque.hpp"
 #include "OTFolders.hpp"
@@ -918,115 +919,116 @@ bool OTTransaction::HarvestClosingNumbers(
     case OTTransaction::transfer:       // Has no closing numbers.
 
         break;
+    /*
+case OTTransaction::marketOffer: // Uses 3 transaction #s, the opening
+                                 // number and 2 closers.
+    // If message fails, all closing numbers are harvestable.
+    // If message succeeds but transaction fails, closers can also be
+    // harvested.
+    // If message succeeds and transaction succeeds, closers are marked as
+    // "used" (like opener.)
+    // In that last case, you can't claw them back since they are used.
+    {
+        OTItem* pItem = GetItem(OTItem::marketOffer);
 
-    case OTTransaction::marketOffer: // Uses 3 transaction #s, the opening
-                                     // number and 2 closers.
-        // If message fails, all closing numbers are harvestable.
-        // If message succeeds but transaction fails, closers can also be
-        // harvested.
-        // If message succeeds and transaction succeeds, closers are marked as
-        // "used" (like opener.)
-        // In that last case, you can't claw them back since they are used.
-        {
-            OTItem* pItem = GetItem(OTItem::marketOffer);
-
-            if (nullptr == pItem) {
-                otErr << "OTTransaction::HarvestClosingNumbers: Error: Unable "
-                         "to find "
-                         "marketOffer item in marketOffer transaction.\n";
-            }
-            else // pItem is good. Let's load up the OTCronIteam object...
-            {
-                OTCronItem theTrade;
-                OTString strTrade;
-                pItem->GetAttachment(strTrade);
-
-                // First load the Trade up...
-                const bool bLoadContractFromString =
-                    (strTrade.Exists() &&
-                     theTrade.LoadContractFromString(strTrade));
-
-                // If failed to load the trade...
-                if (!bLoadContractFromString) {
-                    otErr << "OTTransaction::HarvestClosingNumbers: ERROR: "
-                             "Failed loading trade from string:\n\n" << strTrade
-                          << "\n\n";
-                }
-                else // theTrade is ready to go....
-                {
-
-                    // The message reply itself was a failure. This means the
-                    // transaction itself never got a chance
-                    // to run... which means ALL the closing numbers on that
-                    // transaction are STILL GOOD.
-                    //
-                    if (bReplyWasFailure) // && !bHarvestingForRetry) // on
-                                          // re-try, we need the closing #s to
-                                          // stay put, so the re-try has a
-                                          // chance to work.
-                    { // NOTE: We do NOT exclude harvesting of closing numbers,
-                        // for a marketoffer, based on bHarvestingForRetry. Why
-                        // not?
-                        // Because with marketOffer, ALL transaction #s are
-                        // re-set EACH re-try, not just the opening #. Therefore
-                        // ALL must be clawed back.
-                        theTrade.HarvestClosingNumbers(
-                            theNym); // (Contrast this with payment plan,
-                                     // exchange basket, smart contract...)
-                        bSuccess = true;
-
-                        //                      theTrade.GetAssetAcctClosingNum();
-                        // // For reference.
-                        //                      theTrade.GetCurrencyAcctClosingNum();
-                        // // (The above harvest call grabs THESE numbers.)
-
-                    }
-                    // Else if the server reply message was unambiguously a
-                    // SUCCESS, that means the opening number is DEFINITELY NOT
-                    // HARVESTABLE.
-                    // Why? Because that means the transaction definitely
-                    // ran--and the opener is marked as "used" on SUCCESS, or
-                    // "burned" on
-                    // FAILURE--either way, that's bad for harvesting (no
-                    // point.)
-                    //
-                    // ===> But the CLOSING numbers are harvestable on
-                    // transaction *failure.*
-                    // (They are not harvestable on transaction *success*
-                    // though.)
-                    //
-                    else if (bReplyWasSuccess) {
-                        if (bTransactionWasSuccess) {
-                            // (They are not harvestable on transaction success
-                            // though.)
-                            // This means the "marketOffer" closing trans#s (one
-                            // for asset account, and one for currency account)
-                            // are both
-                            // MARKED AS "USED", and will someday be marked as
-                            // CLOSED.
-                            // EITHER WAY, you certainly can't claw those
-                            // numbers back now! (They are still outstanding,
-                            // though. They're not gone, yet...)
-                            //
-                            //                          theTrade.HarvestClosingNumbers(theNym);
-                            //                          bSuccess = true;
-                        }
-                        else if (bTransactionWasFailure) {
-                            // But the CLOSING numbers ARE harvestable on
-                            // transaction failure.
-                            // (Closing numbers for marketOffers are only marked
-                            // "used" if the
-                            // marketOffer transaction was a success.)
-                            //
-                            theTrade.HarvestClosingNumbers(theNym);
-                            bSuccess = true;
-                        }
-                    } // else if (bReplyWasSuccess)
-
-                } // else (the trade loaded successfully)
-            }     // pItem was found.
+        if (nullptr == pItem) {
+            otErr << "OTTransaction::HarvestClosingNumbers: Error: Unable "
+                     "to find "
+                     "marketOffer item in marketOffer transaction.\n";
         }
-        break;
+        else // pItem is good. Let's load up the OTCronIteam object...
+        {
+            OTCronItem theTrade;
+            OTString strTrade;
+            pItem->GetAttachment(strTrade);
+
+            // First load the Trade up...
+            const bool bLoadContractFromString =
+                (strTrade.Exists() &&
+                 theTrade.LoadContractFromString(strTrade));
+
+            // If failed to load the trade...
+            if (!bLoadContractFromString) {
+                otErr << "OTTransaction::HarvestClosingNumbers: ERROR: "
+                         "Failed loading trade from string:\n\n" << strTrade
+                      << "\n\n";
+            }
+            else // theTrade is ready to go....
+            {
+
+                // The message reply itself was a failure. This means the
+                // transaction itself never got a chance
+                // to run... which means ALL the closing numbers on that
+                // transaction are STILL GOOD.
+                //
+                if (bReplyWasFailure) // && !bHarvestingForRetry) // on
+                                      // re-try, we need the closing #s to
+                                      // stay put, so the re-try has a
+                                      // chance to work.
+                { // NOTE: We do NOT exclude harvesting of closing numbers,
+                    // for a marketoffer, based on bHarvestingForRetry. Why
+                    // not?
+                    // Because with marketOffer, ALL transaction #s are
+                    // re-set EACH re-try, not just the opening #. Therefore
+                    // ALL must be clawed back.
+                    theTrade.HarvestClosingNumbers(
+                        theNym); // (Contrast this with payment plan,
+                                 // exchange basket, smart contract...)
+                    bSuccess = true;
+
+                    //                      theTrade.GetAssetAcctClosingNum();
+                    // // For reference.
+                    // theTrade.GetCurrencyAcctClosingNum();
+                    // // (The above harvest call grabs THESE numbers.)
+
+                }
+                // Else if the server reply message was unambiguously a
+                // SUCCESS, that means the opening number is DEFINITELY NOT
+                // HARVESTABLE.
+                // Why? Because that means the transaction definitely
+                // ran--and the opener is marked as "used" on SUCCESS, or
+                // "burned" on
+                // FAILURE--either way, that's bad for harvesting (no
+                // point.)
+                //
+                // ===> But the CLOSING numbers are harvestable on
+                // transaction *failure.*
+                // (They are not harvestable on transaction *success*
+                // though.)
+                //
+                else if (bReplyWasSuccess) {
+                    if (bTransactionWasSuccess) {
+                        // (They are not harvestable on transaction success
+                        // though.)
+                        // This means the "marketOffer" closing trans#s (one
+                        // for asset account, and one for currency account)
+                        // are both
+                        // MARKED AS "USED", and will someday be marked as
+                        // CLOSED.
+                        // EITHER WAY, you certainly can't claw those
+                        // numbers back now! (They are still outstanding,
+                        // though. They're not gone, yet...)
+                        //
+                        // theTrade.HarvestClosingNumbers(theNym);
+                        //                          bSuccess = true;
+                    }
+                    else if (bTransactionWasFailure) {
+                        // But the CLOSING numbers ARE harvestable on
+                        // transaction failure.
+                        // (Closing numbers for marketOffers are only marked
+                        // "used" if the
+                        // marketOffer transaction was a success.)
+                        //
+                        theTrade.HarvestClosingNumbers(theNym);
+                        bSuccess = true;
+                    }
+                } // else if (bReplyWasSuccess)
+
+            } // else (the trade loaded successfully)
+        }     // pItem was found.
+    }
+    break;
+    */
     /*
 // These aren't AS simple.
 case OTTransaction::paymentPlan: // Uses 4 transaction #s: the opener

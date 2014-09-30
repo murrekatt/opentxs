@@ -177,7 +177,7 @@ void OTInstrument::InitInstrument()
 }
 
 OTInstrument::OTInstrument()
-    : OTScriptable()
+    : OTContract()
     , m_VALID_FROM(OT_TIME_ZERO)
     , m_VALID_TO(OT_TIME_ZERO)
 {
@@ -186,7 +186,7 @@ OTInstrument::OTInstrument()
 
 OTInstrument::OTInstrument(const OTIdentifier& SERVER_ID,
                            const OTIdentifier& ASSET_ID)
-    : OTScriptable()
+    : OTContract()
     , m_AssetTypeID(ASSET_ID)
     , m_ServerID(SERVER_ID)
     , m_VALID_FROM(OT_TIME_ZERO)
@@ -213,7 +213,7 @@ void OTInstrument::Release()
     Release_Instrument(); // My own cleanup is performed here.
     // Next give the base class a chance to do the same...
     // since I've overridden the base class, I call it now
-    OTScriptable::Release();
+    OTContract::Release();
     // Initialize everything back to 0
     //    InitInstrument(); // unnecessary.
 }
@@ -238,7 +238,7 @@ int32_t OTInstrument::ProcessXMLNode(irr::io::IrrXMLReader*& xml)
     // you don't want to use any of those xml tags.
     //
 
-    nReturnVal = OTScriptable::ProcessXMLNode(xml);
+    nReturnVal = OTContract::ProcessXMLNode(xml);
 
     // -1 is error, and 1 is "found it". Either way, return.
     if (nReturnVal != 0) {

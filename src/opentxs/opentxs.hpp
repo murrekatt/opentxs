@@ -134,7 +134,7 @@
 #define __OPENTXS_HPP__
 
 #include "opentxs/client/OT_ME.hpp"
-#include "opentxs/core/script/OTVariable.hpp"
+#include "opentxs/ext/script/OTVariable.hpp"
 
 class AnyOption;
 

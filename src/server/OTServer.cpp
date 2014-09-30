@@ -139,6 +139,13 @@
 #include "Helpers.hpp"
 
 #include <opentxs/ext/OTPayment.hpp>
+#include <opentxs/ext/trade/OTMarket.hpp>
+#include <opentxs/ext/trade/OTOffer.hpp>
+#include <opentxs/ext/script/OTParty.hpp>
+#include <opentxs/ext/script/OTPartyAccount.hpp>
+#include <opentxs/ext/recurring/OTPaymentPlan.hpp>
+#include <opentxs/ext/script/OTSmartContract.hpp>
+#include <opentxs/ext/trade/OTTrade.hpp>
 #include <opentxs/cash/Purse.hpp>
 #include <opentxs/cash/Token.hpp>
 #include <opentxs/basket/Basket.hpp>
@@ -153,18 +160,11 @@
 #include <opentxs/core/crypto/OTKeyring.hpp>
 #include <opentxs/core/OTLedger.hpp>
 #include <opentxs/core/OTLog.hpp>
-#include <opentxs/core/trade/OTMarket.hpp>
 #include <opentxs/core/OTMessage.hpp>
 #include <opentxs/core/crypto/OTNymOrSymmetricKey.hpp>
-#include <opentxs/core/trade/OTOffer.hpp>
-#include <opentxs/core/script/OTParty.hpp>
-#include <opentxs/core/script/OTPartyAccount.hpp>
 #include <opentxs/core/crypto/OTPassword.hpp>
 #include <opentxs/core/OTPaths.hpp>
-#include <opentxs/core/recurring/OTPaymentPlan.hpp>
 #include <opentxs/core/OTServerContract.hpp>
-#include <opentxs/core/script/OTSmartContract.hpp>
-#include <opentxs/core/trade/OTTrade.hpp>
 
 #include <irrxml/irrXML.hpp>
 

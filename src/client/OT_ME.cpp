@@ -136,19 +136,20 @@
 #include "OTAPI.hpp"
 #include "OTMeCpp.hpp"
 
-#include "../core/OTDataFolder.hpp"
-#include "../core/OTLog.hpp"
-#include "../core/OTPaths.hpp"
-#include "../core/OTStorage.hpp"
-#include "../core/script/OTVariable.hpp"
+#include "../ext/script/OTVariable.hpp"
 
 #ifdef OT_USE_SCRIPT_CHAI
-#include "../core/script/OTScriptChai.hpp"
+#include "../ext/script/OTScriptChai.hpp"
 #include <chaiscript/chaiscript.hpp>
 #ifdef OT_USE_CHAI_STDLIB
 #include <chaiscript/chaiscript_stdlib.hpp>
 #endif
 #endif
+
+#include "../core/OTDataFolder.hpp"
+#include "../core/OTLog.hpp"
+#include "../core/OTPaths.hpp"
+#include "../core/OTStorage.hpp"
 
 namespace opentxs
 {

@@ -139,8 +139,7 @@
 #include "OTAPI_Exec.hpp"
 
 #include "../ext/OTPayment.hpp"
-
-#include "../core/recurring/OTPaymentPlan.hpp"
+#include "../ext/recurring/OTPaymentPlan.hpp"
 #include "../core/OTLedger.hpp"
 #include "../core/OTLog.hpp"
 

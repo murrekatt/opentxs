@@ -138,6 +138,9 @@
 #include "OTWallet.hpp"
 
 #include "../ext/OTPayment.hpp"
+#include "../ext/recurring/OTPaymentPlan.hpp"
+#include "../ext/trade/OTOffer.hpp"
+#include "../ext/trade/OTTrade.hpp"
 
 #include "../cash/Mint.hpp"
 #include "../cash/Purse.hpp"
@@ -145,7 +148,6 @@
 
 #include "../basket/Basket.hpp"
 
-#include "../core/recurring/OTPaymentPlan.hpp"
 #include "../core/OTAccount.hpp"
 #include "../core/OTAssetContract.hpp"
 #include "../core/crypto/OTAsymmetricKey.hpp"
@@ -160,8 +162,6 @@
 #include "../core/OTPseudonym.hpp"
 #include "../core/OTServerContract.hpp"
 #include "../core/OTStorage.hpp"
-#include "../core/trade/OTOffer.hpp"
-#include "../core/trade/OTTrade.hpp"
 #include "../core/util/StringUtils.hpp"
 
 #include <cstdio>

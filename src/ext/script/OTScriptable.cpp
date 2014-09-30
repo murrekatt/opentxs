@@ -3387,9 +3387,28 @@ void OTScriptable::Release()
 OTScriptable::OTScriptable()
     : ot_super()
     , m_bCalculatingID(false)
-    , // This is not serialized.
-    m_bSpecifyAssetID(false)
-    , m_bSpecifyParties(false) // These are.
+    , m_bSpecifyAssetID(false)
+    , m_bSpecifyParties(false)
+{
+}
+
+OTScriptable::OTScriptable(const OTIdentifier& SERVER_ID,
+                           const OTIdentifier& ASSET_ID)
+    : ot_super(SERVER_ID, ASSET_ID)
+    , m_bCalculatingID(false)
+    , m_bSpecifyAssetID(false)
+    , m_bSpecifyParties(false)
+{
+}
+
+OTScriptable::OTScriptable(const OTIdentifier& SERVER_ID,
+                           const OTIdentifier& ASSET_ID,
+                           const OTIdentifier& ACCT_ID,
+                           const OTIdentifier& USER_ID)
+    : ot_super(SERVER_ID, ASSET_ID, ACCT_ID, USER_ID)
+    , m_bCalculatingID(false)
+    , m_bSpecifyAssetID(false)
+    , m_bSpecifyParties(false)
 {
 }
 

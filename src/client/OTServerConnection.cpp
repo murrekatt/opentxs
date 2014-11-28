@@ -152,7 +152,6 @@ namespace opentxs
 // but either way the connections need a pointer to the wallet
 // they are associated with, so they can access those accounts.
 OTServerConnection::OTServerConnection(OTClient* theClient,
-                                       const std::string& endpoint,
                                        OTServerContract* contract, Nym* nym)
     : context_zmq(1, 31)
     , socket_zmq(context_zmq, ZMQ_REQ)
@@ -163,12 +162,23 @@ OTServerConnection::OTServerConnection(OTClient* theClient,
     int linger = 1000;
     socket_zmq.setsockopt(ZMQ_LINGER, &linger, sizeof(linger));
 
+    String endpoint;
+
     try {
-        socket_zmq.connect(endpoint.c_str());
+        int32_t port = 0;
+        String hostname;
+
+        if (!m_pServerContract->GetConnectInfo(hostname, port)) {
+            otErr << ": Failed retrieving connection info from server "
+                     "contract.\n";
+            OT_FAIL;
+        }
+        endpoint.Format("tcp://%s:%d", hostname.Get(), port);
+
+        socket_zmq.connect(endpoint.Get());
     }
     catch (const std::exception& e) {
-        Log::vError("Failed to connect to %s: %s \n", endpoint.c_str(),
-                    e.what());
+        Log::vError("Failed to connect to %s: %s \n", endpoint.Get(), e.what());
         OT_FAIL;
     }
 }

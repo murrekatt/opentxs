@@ -176,10 +176,9 @@ OTClient::OTClient(OTWallet* theWallet)
 {
 }
 
-bool OTClient::connect(const std::string& endpoint, OTServerContract* contract,
-                       Nym* nym)
+bool OTClient::connect(OTServerContract* contract, Nym* nym)
 {
-    m_pConnection.reset(new OTServerConnection(this, endpoint, contract, nym));
+    m_pConnection.reset(new OTServerConnection(this, contract, nym));
     return true;
 }
 
@@ -210,18 +209,7 @@ void OTClient::ProcessMessageOut(OTServerContract* pServerContract, Nym* pNym,
         m_MessageOutbuffer.AddSentMessage(*(pMsg.release()));
 
     if (!m_pConnection) {
-        int32_t port = 0;
-        String hostname;
-
-        if (!pServerContract->GetConnectInfo(hostname, port)) {
-            otErr << ": Failed retrieving connection info from server "
-                     "contract.\n";
-            OT_FAIL;
-        }
-        String endpoint;
-        endpoint.Format("tcp://%s:%d", hostname.Get(), port);
-
-        connect(endpoint.Get(), pServerContract, pNym);
+        connect(pServerContract, pNym);
     }
 
     m_pConnection->send(theMessage);

@@ -136,7 +136,6 @@
 #include <opentxs/client/OTMessageBuffer.hpp>
 #include <opentxs/client/OTMessageOutbuffer.hpp>
 #include <opentxs/client/OTServerConnection.hpp>
-#include <string>
 #include <memory>
 
 namespace opentxs
@@ -217,8 +216,7 @@ public:
 public:
     explicit OTClient(OTWallet* theWallet);
 
-    bool connect(const std::string& endpoint, OTServerContract* contract,
-                 Nym* nym);
+    bool connect(OTServerContract* contract, Nym* nym);
 
     inline OTMessageBuffer& GetMessageBuffer()
     {

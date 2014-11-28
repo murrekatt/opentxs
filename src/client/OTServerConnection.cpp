@@ -152,11 +152,12 @@ namespace opentxs
 // but either way the connections need a pointer to the wallet
 // they are associated with, so they can access those accounts.
 OTServerConnection::OTServerConnection(OTClient* theClient,
-                                       const std::string& endpoint)
+                                       const std::string& endpoint,
+                                       OTServerContract* contract, Nym* nym)
     : context_zmq(1, 31)
     , socket_zmq(context_zmq, ZMQ_REQ)
-    , m_pNym(nullptr)
-    , m_pServerContract(nullptr)
+    , m_pNym(nym)
+    , m_pServerContract(contract)
     , m_pClient(theClient)
 {
     int linger = 1000;
@@ -204,12 +205,9 @@ bool OTServerConnection::GetNotaryID(Identifier& theID) const
     return false;
 }
 
-void OTServerConnection::send(OTServerContract* pServerContract, Nym* pNym,
-                              const Message& theMessage)
+void OTServerConnection::send(const Message& theMessage)
 {
-    OT_ASSERT(nullptr != pServerContract);
-    OT_ASSERT(nullptr != pNym)
-    const Nym* pServerNym = pServerContract->GetContractPublicNym();
+    const Nym* pServerNym = m_pServerContract->GetContractPublicNym();
     OT_ASSERT(nullptr != pServerNym);
 
     OTEnvelope theEnvelope;
@@ -221,8 +219,6 @@ void OTServerConnection::send(OTServerContract* pServerContract, Nym* pNym,
           << " message via ZMQ... Request number: "
           << theMessage.m_strRequestNum << "\n";
 
-    m_pServerContract = pServerContract;
-    m_pNym = pNym;
     send(theEnvelope);
 
     otWarn << "<=====END Finished sending " << theMessage.m_strCommand

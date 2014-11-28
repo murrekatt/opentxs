@@ -176,9 +176,10 @@ OTClient::OTClient(OTWallet* theWallet)
 {
 }
 
-bool OTClient::connect(const std::string& endpoint)
+bool OTClient::connect(const std::string& endpoint, OTServerContract* contract,
+                       Nym* nym)
 {
-    m_pConnection.reset(new OTServerConnection(this, endpoint));
+    m_pConnection.reset(new OTServerConnection(this, endpoint, contract, nym));
     return true;
 }
 
@@ -220,10 +221,10 @@ void OTClient::ProcessMessageOut(OTServerContract* pServerContract, Nym* pNym,
         String endpoint;
         endpoint.Format("tcp://%s:%d", hostname.Get(), port);
 
-        connect(endpoint.Get());
+        connect(endpoint.Get(), pServerContract, pNym);
     }
 
-    m_pConnection->send(pServerContract, pNym, theMessage);
+    m_pConnection->send(theMessage);
 }
 
 /// This is standard behavior for the Nymbox (NOT the inbox.)

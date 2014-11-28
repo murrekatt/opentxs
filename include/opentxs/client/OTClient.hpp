@@ -217,7 +217,8 @@ public:
 public:
     explicit OTClient(OTWallet* theWallet);
 
-    bool connect(const std::string& endpoint);
+    bool connect(const std::string& endpoint, OTServerContract* contract,
+                 Nym* nym);
 
     inline OTMessageBuffer& GetMessageBuffer()
     {

@@ -144,7 +144,6 @@ class OTClient;
 class Identifier;
 class Nym;
 class OTServerContract;
-class OTEnvelope;
 class Message;
 
 class OTServerConnection
@@ -170,7 +169,7 @@ public:
     void send(const Message& theMessage);
 
 private:
-    bool send(const OTEnvelope& envelope);
+    bool send(const char* data, size_t length);
     bool receive(std::string& reply);
 
 private:

@@ -220,16 +220,19 @@ void OTServerConnection::send(const Message& theMessage)
     const Nym* pServerNym = m_pServerContract->GetContractPublicNym();
     OT_ASSERT(nullptr != pServerNym);
 
+    // wrap in envelope and seal it
     OTEnvelope theEnvelope;
     String strEnvelopeContents;
     theMessage.SaveContractRaw(strEnvelopeContents);
     theEnvelope.Seal(*pServerNym, strEnvelopeContents);
+    // armor envelope
+    OTASCIIArmor ascEnvelope(theEnvelope);
 
     otOut << "\n=====>BEGIN Sending " << theMessage.m_strCommand
           << " message via ZMQ... Request number: "
           << theMessage.m_strRequestNum << "\n";
 
-    send(theEnvelope);
+    send(ascEnvelope.Get(), ascEnvelope.GetLength());
 
     otWarn << "<=====END Finished sending " << theMessage.m_strCommand
            << " message (and hopefully receiving "
@@ -237,15 +240,9 @@ void OTServerConnection::send(const Message& theMessage)
            << "\n\n";
 }
 
-bool OTServerConnection::send(const OTEnvelope& theEnvelope)
+bool OTServerConnection::send(const char* data, size_t length)
 {
-    OTASCIIArmor ascEnvelope(theEnvelope);
-
-    if (!ascEnvelope.Exists()) {
-        return false;
-    }
-
-    bool success = socket_zmq.send(ascEnvelope.Get(), ascEnvelope.GetLength());
+    bool success = socket_zmq.send(data, length);
 
     if (!success) {
         otErr << __FUNCTION__

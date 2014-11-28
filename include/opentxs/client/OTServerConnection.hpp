@@ -166,7 +166,8 @@ public:
 
     void OnServerResponseToGetRequestNumber(int64_t lNewRequestNumber) const;
 
-    void send(const Message& theMessage);
+    bool send(const Message& theMessage);
+    bool receive();
 
 private:
     bool send(const char* data, size_t length);

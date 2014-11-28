@@ -212,7 +212,17 @@ void OTClient::ProcessMessageOut(OTServerContract* pServerContract, Nym* pNym,
         connect(pServerContract, pNym);
     }
 
-    m_pConnection->send(theMessage);
+    bool sent = m_pConnection->send(theMessage);
+    if (!sent) {
+        otErr << "Error sending message!\n";
+        OT_FAIL;
+    }
+
+    bool received = m_pConnection->receive();
+    if (!received) {
+        otErr << "Error receiving message!\n";
+        OT_FAIL;
+    }
 }
 
 /// This is standard behavior for the Nymbox (NOT the inbox.)
